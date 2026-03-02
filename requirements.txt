@@ -1,0 +1,4 @@
+aws-lambda-powertools
+boto3
+aurora-dsql-python-connector
+psycopg[binary,pool]

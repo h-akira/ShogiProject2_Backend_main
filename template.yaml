@@ -1,0 +1,156 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: ShogiProject Main API
+
+Parameters:
+  Env:
+    Type: String
+    Description: Environment identifier (dev, pro)
+  KifuMax:
+    Type: String
+    Default: "2000"
+    Description: Maximum number of kifus per user
+  TagMax:
+    Type: String
+    Default: "50"
+    Description: Maximum number of tags per user
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 256
+    Runtime: python3.13
+  Api:
+    Cors:
+      AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+      AllowHeaders: "'Content-Type,Authorization'"
+      AllowOrigin: "'*'"
+      AllowCredentials: false
+
+Resources:
+  DsqlCluster:
+    Type: AWS::DSQL::Cluster
+    Properties:
+      DeletionProtectionEnabled: true
+      Tags:
+        - Key: Project
+          Value: ShogiProject
+        - Key: Environment
+          Value: !Ref Env
+
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !ImportValue
+              Fn::Sub: "sgp-${Env}-infra-CognitoUserPoolArn"
+            Identity:
+              Header: Authorization
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "lambda-sgp-${Env}-backend-main"
+      CodeUri: src/
+      Handler: app.lambda_handler
+      Environment:
+        Variables:
+          DSQL_CLUSTER_ENDPOINT: !GetAtt DsqlCluster.Endpoint
+          KIFU_MAX: !Ref KifuMax
+          TAG_MAX: !Ref TagMax
+          USER_POOL_ID: !ImportValue
+            Fn::Sub: "sgp-${Env}-infra-CognitoUserPoolId"
+          CLIENT_ID: !ImportValue
+            Fn::Sub: "sgp-${Env}-infra-CognitoClientId"
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - dsql:DbConnectAdmin
+              Resource: !Sub "arn:aws:dsql:${AWS::Region}:${AWS::AccountId}:cluster/${DsqlCluster}"
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:AdminInitiateAuth
+                - cognito-idp:AdminDeleteUser
+                - cognito-idp:AdminGetUser
+              Resource: !ImportValue
+                Fn::Sub: "sgp-${Env}-infra-CognitoUserPoolArn"
+      Events:
+        UsersMe:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /api/v1/main/users/me
+            Method: ANY
+        KifusRecent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /api/v1/main/kifus/recent
+            Method: GET
+        Kifus:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /api/v1/main/kifus
+            Method: ANY
+        KifusExplorer:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /api/v1/main/kifus/explorer
+            Method: GET
+        KifusKid:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /api/v1/main/kifus/{kid}
+            Method: ANY
+        KifusShareCode:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /api/v1/main/kifus/{kid}/share-code
+            Method: PUT
+        SharedKifu:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /api/v1/main/shared/{share_code}
+            Method: GET
+            Auth:
+              Authorizer: NONE
+        Tags:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /api/v1/main/tags
+            Method: ANY
+        TagsTid:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /api/v1/main/tags/{tid}
+            Method: ANY
+
+Outputs:
+  ApiGatewayId:
+    Description: API Gateway REST API ID
+    Value: !Ref ApiGateway
+    Export:
+      Name: !Sub "sgp-${Env}-backend-main-ApiGatewayId"
+  ApiGatewayStageName:
+    Description: API Gateway stage name
+    Value: Prod
+    Export:
+      Name: !Sub "sgp-${Env}-backend-main-ApiGatewayStageName"
+  DsqlClusterEndpoint:
+    Description: Aurora DSQL cluster endpoint for migrations
+    Value: !GetAtt DsqlCluster.Endpoint

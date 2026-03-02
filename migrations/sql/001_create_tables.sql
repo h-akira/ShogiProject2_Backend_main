@@ -1,0 +1,30 @@
+-- STATEMENT
+CREATE TABLE IF NOT EXISTS kifus (
+  kid         VARCHAR(12) PRIMARY KEY,
+  username    VARCHAR(255) NOT NULL,
+  slug        VARCHAR(1024) NOT NULL,
+  side        VARCHAR(20) NOT NULL DEFAULT 'none',
+  result      VARCHAR(20) NOT NULL DEFAULT 'none',
+  memo        TEXT NOT NULL DEFAULT '',
+  kif         TEXT NOT NULL DEFAULT '',
+  shared      BOOLEAN NOT NULL DEFAULT FALSE,
+  share_code  VARCHAR(36),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- STATEMENT
+CREATE TABLE IF NOT EXISTS tags (
+  tid         VARCHAR(12) PRIMARY KEY,
+  username    VARCHAR(255) NOT NULL,
+  name        VARCHAR(127) NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- STATEMENT
+CREATE TABLE IF NOT EXISTS kifu_tags (
+  kid         VARCHAR(12) NOT NULL,
+  tid         VARCHAR(12) NOT NULL,
+  PRIMARY KEY (kid, tid)
+);
