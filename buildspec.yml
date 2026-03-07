@@ -22,6 +22,8 @@ phases:
         --region ${REGION}
   post_build:
     commands:
+      - which python && python --version
+      - which pip && pip --version
       - echo "Running database migrations..."
       - SAM_STACK_NAME=stack-sgp-${ENV}-backend-main
       - >-
