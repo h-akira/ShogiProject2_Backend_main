@@ -33,5 +33,9 @@ phases:
       - echo "PATH=$PATH"
       - ls -la .python-version 2>/dev/null || echo "No .python-version file"
       - python -m pip install -r migrations/requirements.txt
-      - python -c "import aurora_dsql_python_connector; print('import OK')" || echo "import FAILED"
-      - python migrations/migrate.py --endpoint dummy --region ${REGION} || true
+      - python -m pip show aurora-dsql-python-connector || echo "pip show FAILED"
+      - python -m pip list | grep -i aurora || echo "not in pip list"
+      - ls /root/.pyenv/versions/3.13.8/lib/python3.13/site-packages/ | grep aurora || echo "no aurora dir in site-packages"
+      - python -c "import sys; print(sys.executable); import aurora_dsql_python_connector; print('import OK')" || echo "import FAILED"
+      - python3.13 -c "import aurora_dsql_python_connector; print('import OK via python3.13')" || echo "python3.13 import FAILED"
+      - /root/.pyenv/versions/3.13.8/bin/python -c "import aurora_dsql_python_connector; print('import OK via full path')" || echo "full path import FAILED"
