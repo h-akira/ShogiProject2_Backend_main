@@ -20,3 +20,15 @@ phases:
         --parameter-overrides Env=$ENV
         --capabilities CAPABILITY_NAMED_IAM
         --region ${REGION}
+  post_build:
+    commands:
+      - echo "Running database migrations..."
+      - SAM_STACK_NAME=stack-sgp-${ENV}-backend-main
+      - >-
+        DSQL_ENDPOINT=$(aws cloudformation describe-stacks
+        --stack-name ${SAM_STACK_NAME}
+        --query "Stacks[0].Outputs[?OutputKey=='DsqlClusterEndpoint'].OutputValue"
+        --output text
+        --region ${REGION})
+      - pip install -r migrations/requirements.txt
+      - python migrations/migrate.py --endpoint ${DSQL_ENDPOINT} --region ${REGION}
