@@ -5,6 +5,9 @@ env:
     REGION: ap-northeast-1
 
 phases:
+  install:
+    runtime-versions:
+      python: 3.13
   build:
     commands:
       - sam build
