@@ -11,13 +11,10 @@ _conn: psycopg.Connection | None = None
 def get_connection() -> psycopg.Connection:
   global _conn
   if _conn is None or _conn.closed:
-    from aurora_dsql_python_connector import DsqlConnector
-    connector = DsqlConnector()
-    _conn = connector.connect(
-      host=DSQL_CLUSTER_ENDPOINT,
-      dbname="postgres",
-      driver="psycopg",
+    from aurora_dsql_psycopg import DSQLConnection
+    _conn = DSQLConnection.connect(
+      DSQL_CLUSTER_ENDPOINT,
       autocommit=False,
+      row_factory=dict_row,
     )
-    _conn.row_factory = dict_row
   return _conn
