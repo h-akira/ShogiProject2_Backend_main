@@ -31,4 +31,4 @@ phases:
         --output text
         --region ${REGION})
       - python -m pip install -r migrations/requirements.txt
-      - python migrations/migrate.py --endpoint ${DSQL_ENDPOINT} --region ${REGION}
+      - python migrations/migrate.py --endpoint ${DSQL_ENDPOINT} --region ${REGION} --sql-dir migrations/sql
