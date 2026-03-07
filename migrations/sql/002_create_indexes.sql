@@ -1,6 +1,6 @@
 -- STATEMENT
 CREATE INDEX ASYNC IF NOT EXISTS idx_kifus_user_updated
-  ON kifus (username, updated_at DESC);
+  ON kifus (username, updated_at);
 
 -- STATEMENT
 CREATE UNIQUE INDEX ASYNC IF NOT EXISTS idx_kifus_user_slug
