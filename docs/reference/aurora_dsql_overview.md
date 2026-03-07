@@ -28,7 +28,6 @@
 - Window 関数: `COUNT(*) OVER()`
 - CTE: `WITH` 句
 - UNIQUE インデックス（一意制約として利用）
-- 部分インデックス（`WHERE` 句付き）
 - ビュー
 
 ### 使用不可
@@ -41,6 +40,8 @@
 | `TRUNCATE` | `DELETE FROM table_name` |
 | 悲観的ロック（`SELECT ... FOR UPDATE`） | OCC + リトライ |
 | 外部キー CASCADE | アプリケーション層で削除順序を管理 |
+| 部分インデックス（`WHERE` 句付き） | 通常のインデックスで代替 |
+| インデックスキーのソート順指定（`DESC`） | デフォルトの昇順のみ |
 
 ---
 

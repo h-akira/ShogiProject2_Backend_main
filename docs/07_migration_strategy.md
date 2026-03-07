@@ -92,15 +92,15 @@ CREATE TABLE IF NOT EXISTS kifu_tags (
 ```sql
 -- STATEMENT
 CREATE INDEX ASYNC IF NOT EXISTS idx_kifus_user_updated
-  ON kifus (username, updated_at DESC);
+  ON kifus (username, updated_at);
 
 -- STATEMENT
 CREATE UNIQUE INDEX ASYNC IF NOT EXISTS idx_kifus_user_slug
   ON kifus (username, slug);
 
 -- STATEMENT
-CREATE UNIQUE INDEX ASYNC IF NOT EXISTS idx_kifus_share_code
-  ON kifus (share_code) WHERE share_code IS NOT NULL;
+CREATE INDEX ASYNC IF NOT EXISTS idx_kifus_share_code
+  ON kifus (share_code);
 
 -- STATEMENT
 CREATE UNIQUE INDEX ASYNC IF NOT EXISTS idx_tags_user_name
@@ -110,6 +110,8 @@ CREATE UNIQUE INDEX ASYNC IF NOT EXISTS idx_tags_user_name
 CREATE INDEX ASYNC IF NOT EXISTS idx_kifu_tags_tid
   ON kifu_tags (tid);
 ```
+
+> **注意:** Aurora DSQL ではインデックスキーのソート順指定（`DESC`）および部分インデックス（`WHERE` 句付き）はサポートされていない。`share_code` インデックスは `NULL` を含む非ユニークインデックスに変更している。
 
 ---
 
@@ -133,7 +135,7 @@ psycopg[binary]
 ### 処理フロー
 
 ```
-1. DsqlConnector で Aurora DSQL に接続（IAM 認証）
+1. aurora_dsql_psycopg で Aurora DSQL に接続（IAM 認証トークン自動生成）
 2. sql/ ディレクトリ内の *.sql ファイルをファイル名順で取得
 3. 各 SQL ファイルについて:
    a. `-- STATEMENT` でファイルを分割
@@ -145,7 +147,7 @@ psycopg[binary]
 ### コード概要
 
 ```python
-from aurora_dsql_python_connector import DsqlConnector
+import aurora_dsql_psycopg as dsql
 
 def parse_sql_file(filepath: str) -> list[str]:
     """Parse a SQL file into individual statements, split by '-- STATEMENT'."""
@@ -154,8 +156,7 @@ def parse_sql_file(filepath: str) -> list[str]:
     return [s.strip() for s in content.split("-- STATEMENT") if s.strip()]
 
 def run_migrations(endpoint: str, region: str, sql_dir: str) -> None:
-    connector = DsqlConnector(region=region)
-    conn = connector.connect(host=endpoint, dbname="postgres", driver="psycopg")
+    conn = dsql.connect(host=endpoint, dbname="postgres", region=region)
 
     for filepath in sorted(glob.glob(os.path.join(sql_dir, "*.sql"))):
         statements = parse_sql_file(filepath)
@@ -166,6 +167,8 @@ def run_migrations(endpoint: str, region: str, sql_dir: str) -> None:
 
     conn.close()
 ```
+
+> **注意:** `aurora-dsql-python-connector` v0.2.x で API が変更された。旧 API（`from aurora_dsql_python_connector import DsqlConnector`）は使用不可。ドライバ別モジュール `aurora_dsql_psycopg` を使用する。
 
 ---
 
@@ -185,18 +188,37 @@ Outputs:
 
 ### CodeBuild buildspec の変更
 
-`CICD/backend.yaml` の buildspec に `post_build` フェーズを追加する。
+`Backend/main/buildspec.yml` の `post_build` フェーズで `sam deploy` 後にマイグレーションを実行する。
 
 ```yaml
 phases:
-  # ... install, build は既存のまま ...
+  install:
+    runtime-versions:
+      python: 3.13
+  build:
+    commands:
+      - sam build
+      - >-
+        sam deploy
+        --stack-name stack-sgp-${ENV}-backend-main
+        --no-confirm-changeset
+        --no-fail-on-empty-changeset
+        --resolve-s3
+        --parameter-overrides Env=$ENV
+        --capabilities CAPABILITY_NAMED_IAM
+        --region ${REGION}
   post_build:
     commands:
       - echo "Running database migrations..."
-      - DSQL_ENDPOINT=$(aws cloudformation describe-stacks --stack-name ${SAM_STACK_NAME} --query "Stacks[0].Outputs[?OutputKey=='DsqlClusterEndpoint'].OutputValue" --output text)
-      - cd Backend/main/migrations
-      - pip install -r requirements.txt
-      - python migrate.py --endpoint ${DSQL_ENDPOINT}
+      - SAM_STACK_NAME=stack-sgp-${ENV}-backend-main
+      - >-
+        DSQL_ENDPOINT=$(aws cloudformation describe-stacks
+        --stack-name ${SAM_STACK_NAME}
+        --query "Stacks[0].Outputs[?OutputKey=='DsqlClusterEndpoint'].OutputValue"
+        --output text
+        --region ${REGION})
+      - python -m pip install -r migrations/requirements.txt
+      - python migrations/migrate.py --endpoint ${DSQL_ENDPOINT} --region ${REGION} --sql-dir migrations/sql
 ```
 
 ### CodeBuild IAM ポリシーの追加
@@ -219,9 +241,9 @@ CodeBuild ロールに Aurora DSQL への接続権限を追加する。
 開発時やデバッグ時に手動でマイグレーションを実行する場合:
 
 ```bash
-cd Backend/main/migrations
-pip install -r requirements.txt
-python migrate.py --endpoint <cluster-endpoint>
+cd Backend/main
+pip install -r migrations/requirements.txt
+python migrations/migrate.py --endpoint <cluster-endpoint> --region ap-northeast-1 --sql-dir migrations/sql
 ```
 
 ---
