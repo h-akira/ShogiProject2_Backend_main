@@ -12,7 +12,7 @@ import glob
 import os
 import sys
 
-from aurora_dsql_python_connector import DsqlConnector
+import aurora_dsql_psycopg as dsql
 
 
 def parse_sql_file(filepath: str) -> list[str]:
@@ -24,8 +24,7 @@ def parse_sql_file(filepath: str) -> list[str]:
 
 def run_migrations(endpoint: str, region: str, sql_dir: str) -> None:
   """Connect to Aurora DSQL and execute all SQL migration files."""
-  connector = DsqlConnector(region=region)
-  conn = connector.connect(host=endpoint, dbname="postgres", driver="psycopg")
+  conn = dsql.connect(host=endpoint, dbname="postgres", region=region)
 
   sql_files = sorted(glob.glob(os.path.join(sql_dir, "*.sql")))
   if not sql_files:
