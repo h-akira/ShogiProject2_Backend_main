@@ -10,27 +10,28 @@ phases:
       python: 3.13
   build:
     commands:
+      # Debug: environment before sam build
+      - echo "=== BEFORE sam build ==="
+      - which python && python --version
+      - python -c "import sys; print('executable:', sys.executable); print('path:', sys.path)"
+      - echo "PATH=$PATH"
+      - pyenv versions || true
+      - ls -la .python-version 2>/dev/null || echo "No .python-version file"
       - sam build
-      - >-
-        sam deploy
-        --stack-name stack-sgp-${ENV}-backend-main
-        --no-confirm-changeset
-        --no-fail-on-empty-changeset
-        --resolve-s3
-        --parameter-overrides Env=$ENV
-        --capabilities CAPABILITY_NAMED_IAM
-        --region ${REGION}
+      # Debug: environment after sam build
+      - echo "=== AFTER sam build ==="
+      - which python && python --version
+      - python -c "import sys; print('executable:', sys.executable); print('path:', sys.path)"
+      - echo "PATH=$PATH"
+      - ls -la .python-version 2>/dev/null || echo "No .python-version file"
   post_build:
     commands:
+      # Debug: environment in post_build
+      - echo "=== POST_BUILD ==="
       - which python && python --version
-      - which pip && pip --version
-      - echo "Running database migrations..."
-      - SAM_STACK_NAME=stack-sgp-${ENV}-backend-main
-      - >-
-        DSQL_ENDPOINT=$(aws cloudformation describe-stacks
-        --stack-name ${SAM_STACK_NAME}
-        --query "Stacks[0].Outputs[?OutputKey=='DsqlClusterEndpoint'].OutputValue"
-        --output text
-        --region ${REGION})
+      - python -c "import sys; print('executable:', sys.executable); print('path:', sys.path)"
+      - echo "PATH=$PATH"
+      - ls -la .python-version 2>/dev/null || echo "No .python-version file"
       - python -m pip install -r migrations/requirements.txt
-      - python migrations/migrate.py --endpoint ${DSQL_ENDPOINT} --region ${REGION}
+      - python -c "import aurora_dsql_python_connector; print('import OK')" || echo "import FAILED"
+      - python migrations/migrate.py --endpoint dummy --region ${REGION} || true
