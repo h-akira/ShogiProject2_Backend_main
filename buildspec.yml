@@ -30,5 +30,5 @@ phases:
         --query "Stacks[0].Outputs[?OutputKey=='DsqlClusterEndpoint'].OutputValue"
         --output text
         --region ${REGION})
-      - pip install -r migrations/requirements.txt
+      - python -m pip install -r migrations/requirements.txt
       - python migrations/migrate.py --endpoint ${DSQL_ENDPOINT} --region ${REGION}
