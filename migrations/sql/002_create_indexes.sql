@@ -7,8 +7,8 @@ CREATE UNIQUE INDEX ASYNC IF NOT EXISTS idx_kifus_user_slug
   ON kifus (username, slug);
 
 -- STATEMENT
-CREATE UNIQUE INDEX ASYNC IF NOT EXISTS idx_kifus_share_code
-  ON kifus (share_code) WHERE share_code IS NOT NULL;
+CREATE INDEX ASYNC IF NOT EXISTS idx_kifus_share_code
+  ON kifus (share_code);
 
 -- STATEMENT
 CREATE UNIQUE INDEX ASYNC IF NOT EXISTS idx_tags_user_name
