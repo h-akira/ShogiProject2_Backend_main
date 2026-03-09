@@ -59,10 +59,10 @@ def delete_account(username: str, password: str) -> None:
 
   # Delete all user data in one transaction
   conn = get_connection()
-  kifu_repository.delete_all_kifu_tags_for_user(username)
-  kifu_repository.delete_all_kifus_for_user(username)
-  tag_repository.delete_all_tags_for_user(username)
-  conn.commit()
+  with conn.transaction():
+    kifu_repository.delete_all_kifu_tags_for_user(username)
+    kifu_repository.delete_all_kifus_for_user(username)
+    tag_repository.delete_all_tags_for_user(username)
 
   # Delete Cognito user
   client.admin_delete_user(

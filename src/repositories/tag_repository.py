@@ -40,13 +40,13 @@ def insert_tag(tag: dict) -> dict:
   placeholders = ", ".join(["%s"] * len(columns))
   col_names = ", ".join(columns)
   values = [tag[c] for c in columns]
-  with conn.cursor() as cur:
-    cur.execute(
-      f"INSERT INTO tags ({col_names}) VALUES ({placeholders}) RETURNING *",
-      values,
-    )
-    row = cur.fetchone()
-  conn.commit()
+  with conn.transaction():
+    with conn.cursor() as cur:
+      cur.execute(
+        f"INSERT INTO tags ({col_names}) VALUES ({placeholders}) RETURNING *",
+        values,
+      )
+      row = cur.fetchone()
   return row
 
 
@@ -54,25 +54,25 @@ def update_tag(tid: str, username: str, updates: dict) -> dict:
   conn = get_connection()
   set_clauses = ", ".join([f"{k} = %s" for k in updates.keys()])
   values = list(updates.values()) + [tid, username]
-  with conn.cursor() as cur:
-    cur.execute(
-      f"UPDATE tags SET {set_clauses} WHERE tid = %s AND username = %s RETURNING *",
-      values,
-    )
-    row = cur.fetchone()
-  conn.commit()
+  with conn.transaction():
+    with conn.cursor() as cur:
+      cur.execute(
+        f"UPDATE tags SET {set_clauses} WHERE tid = %s AND username = %s RETURNING *",
+        values,
+      )
+      row = cur.fetchone()
   return row
 
 
 def delete_tag(tid: str, username: str) -> None:
   conn = get_connection()
-  with conn.cursor() as cur:
-    cur.execute("DELETE FROM kifu_tags WHERE tid = %s", (tid,))
-    cur.execute(
-      "DELETE FROM tags WHERE tid = %s AND username = %s",
-      (tid, username),
-    )
-  conn.commit()
+  with conn.transaction():
+    with conn.cursor() as cur:
+      cur.execute("DELETE FROM kifu_tags WHERE tid = %s", (tid,))
+      cur.execute(
+        "DELETE FROM tags WHERE tid = %s AND username = %s",
+        (tid, username),
+      )
 
 
 def get_kifus_by_tag(username: str, tid: str) -> list[dict]:

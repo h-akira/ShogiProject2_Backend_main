@@ -77,13 +77,13 @@ def insert_kifu(kifu: dict) -> dict:
   placeholders = ", ".join(["%s"] * len(columns))
   col_names = ", ".join(columns)
   values = [kifu[c] for c in columns]
-  with conn.cursor() as cur:
-    cur.execute(
-      f"INSERT INTO kifus ({col_names}) VALUES ({placeholders}) RETURNING *",
-      values,
-    )
-    row = cur.fetchone()
-  conn.commit()
+  with conn.transaction():
+    with conn.cursor() as cur:
+      cur.execute(
+        f"INSERT INTO kifus ({col_names}) VALUES ({placeholders}) RETURNING *",
+        values,
+      )
+      row = cur.fetchone()
   return row
 
 
@@ -91,25 +91,25 @@ def update_kifu(kid: str, username: str, updates: dict) -> dict:
   conn = get_connection()
   set_clauses = ", ".join([f"{k} = %s" for k in updates.keys()])
   values = list(updates.values()) + [kid, username]
-  with conn.cursor() as cur:
-    cur.execute(
-      f"UPDATE kifus SET {set_clauses} WHERE kid = %s AND username = %s RETURNING *",
-      values,
-    )
-    row = cur.fetchone()
-  conn.commit()
+  with conn.transaction():
+    with conn.cursor() as cur:
+      cur.execute(
+        f"UPDATE kifus SET {set_clauses} WHERE kid = %s AND username = %s RETURNING *",
+        values,
+      )
+      row = cur.fetchone()
   return row
 
 
 def delete_kifu(kid: str, username: str) -> None:
   conn = get_connection()
-  with conn.cursor() as cur:
-    cur.execute("DELETE FROM kifu_tags WHERE kid = %s", (kid,))
-    cur.execute(
-      "DELETE FROM kifus WHERE kid = %s AND username = %s",
-      (kid, username),
-    )
-  conn.commit()
+  with conn.transaction():
+    with conn.cursor() as cur:
+      cur.execute("DELETE FROM kifu_tags WHERE kid = %s", (kid,))
+      cur.execute(
+        "DELETE FROM kifus WHERE kid = %s AND username = %s",
+        (kid, username),
+      )
 
 
 def query_by_slug_prefix(username: str, prefix: str) -> list[dict]:
@@ -144,26 +144,26 @@ def insert_kifu_tags(kid: str, tag_ids: list[str]) -> None:
   if not tag_ids:
     return
   conn = get_connection()
-  with conn.cursor() as cur:
-    for tid in tag_ids:
-      cur.execute(
-        "INSERT INTO kifu_tags (kid, tid) VALUES (%s, %s)",
-        (kid, tid),
-      )
-  conn.commit()
+  with conn.transaction():
+    with conn.cursor() as cur:
+      for tid in tag_ids:
+        cur.execute(
+          "INSERT INTO kifu_tags (kid, tid) VALUES (%s, %s)",
+          (kid, tid),
+        )
 
 
 def delete_kifu_tags(kid: str, tag_ids: list[str]) -> None:
   if not tag_ids:
     return
   conn = get_connection()
-  with conn.cursor() as cur:
-    for tid in tag_ids:
-      cur.execute(
-        "DELETE FROM kifu_tags WHERE kid = %s AND tid = %s",
-        (kid, tid),
-      )
-  conn.commit()
+  with conn.transaction():
+    with conn.cursor() as cur:
+      for tid in tag_ids:
+        cur.execute(
+          "DELETE FROM kifu_tags WHERE kid = %s AND tid = %s",
+          (kid, tid),
+        )
 
 
 def delete_all_kifu_tags_for_user(username: str) -> None:

@@ -14,7 +14,7 @@ def get_connection() -> psycopg.Connection:
     from aurora_dsql_psycopg import DSQLConnection
     _conn = DSQLConnection.connect(
       DSQL_CLUSTER_ENDPOINT,
-      autocommit=False,
+      autocommit=True,
       row_factory=dict_row,
     )
   return _conn
