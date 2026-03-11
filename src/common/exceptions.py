@@ -36,7 +36,7 @@ class LimitExceededError(AppError):
 
 
 class AuthenticationError(AppError):
-  status_code = 401
+  status_code = 403
 
   def __init__(self, message: str = "Authentication failed"):
     super().__init__(message)
