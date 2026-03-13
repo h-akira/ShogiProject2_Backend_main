@@ -33,6 +33,8 @@ Resources:
     Properties:
       DeletionProtectionEnabled: true
       Tags:
+        - Key: Name
+          Value: !Sub "dsql-sgp-${Env}-backend-main"
         - Key: Project
           Value: ShogiProject
         - Key: Environment
