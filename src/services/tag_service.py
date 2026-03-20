@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import psycopg.errors
+from aws_lambda_powertools import Tracer
+
+tracer = Tracer()
 
 from common.config import TAG_MAX
 from common.datetime_util import now_iso8601
@@ -36,6 +39,7 @@ def _build_tag(tag: dict) -> dict:
   }
 
 
+@tracer.capture_method(capture_response=False)
 def create_tag(username: str, body: dict) -> dict:
   name = body.get("name", "")
   _validate_tag_name(name)
@@ -65,11 +69,13 @@ def create_tag(username: str, body: dict) -> dict:
   return _build_tag(tag)
 
 
+@tracer.capture_method(capture_response=False)
 def get_tags(username: str) -> list[dict]:
   tags = tag_repository.list_tags(username)
   return [_build_tag(t) for t in tags]
 
 
+@tracer.capture_method(capture_response=False)
 def get_tag(username: str, tid: str) -> dict:
   tag = tag_repository.get_tag(username, tid)
   if not tag:
@@ -91,6 +97,7 @@ def get_tag(username: str, tid: str) -> dict:
   return result
 
 
+@tracer.capture_method(capture_response=False)
 def update_tag(username: str, tid: str, body: dict) -> dict:
   existing = tag_repository.get_tag(username, tid)
   if not existing:
@@ -112,6 +119,7 @@ def update_tag(username: str, tid: str, body: dict) -> dict:
   return _build_tag(tag)
 
 
+@tracer.capture_method(capture_response=False)
 def delete_tag(username: str, tid: str) -> None:
   existing = tag_repository.get_tag(username, tid)
   if not existing:

@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+from aws_lambda_powertools import Tracer
+
 from repositories.db import get_connection
 
+tracer = Tracer()
 
+
+@tracer.capture_method(capture_response=False)
 def get_tag(username: str, tid: str) -> dict | None:
   conn = get_connection()
   with conn.cursor() as cur:
@@ -13,6 +18,7 @@ def get_tag(username: str, tid: str) -> dict | None:
     return cur.fetchone()
 
 
+@tracer.capture_method(capture_response=False)
 def list_tags(username: str) -> list[dict]:
   conn = get_connection()
   with conn.cursor() as cur:
@@ -23,6 +29,7 @@ def list_tags(username: str) -> list[dict]:
     return cur.fetchall()
 
 
+@tracer.capture_method(capture_response=False)
 def count_tags(username: str) -> int:
   conn = get_connection()
   with conn.cursor() as cur:
@@ -34,6 +41,7 @@ def count_tags(username: str) -> int:
     return row["cnt"] if row else 0
 
 
+@tracer.capture_method(capture_response=False)
 def insert_tag(tag: dict) -> dict:
   conn = get_connection()
   columns = list(tag.keys())
@@ -50,6 +58,7 @@ def insert_tag(tag: dict) -> dict:
   return row
 
 
+@tracer.capture_method(capture_response=False)
 def update_tag(tid: str, username: str, updates: dict) -> dict:
   conn = get_connection()
   set_clauses = ", ".join([f"{k} = %s" for k in updates.keys()])
@@ -64,6 +73,7 @@ def update_tag(tid: str, username: str, updates: dict) -> dict:
   return row
 
 
+@tracer.capture_method(capture_response=False)
 def delete_tag(tid: str, username: str) -> None:
   conn = get_connection()
   with conn.transaction():
@@ -75,6 +85,7 @@ def delete_tag(tid: str, username: str) -> None:
       )
 
 
+@tracer.capture_method(capture_response=False)
 def get_kifus_by_tag(username: str, tid: str) -> list[dict]:
   conn = get_connection()
   with conn.cursor() as cur:
@@ -91,6 +102,7 @@ def get_kifus_by_tag(username: str, tid: str) -> list[dict]:
     return cur.fetchall()
 
 
+@tracer.capture_method(capture_response=False)
 def check_tags_exist(username: str, tag_ids: list[str]) -> list[str]:
   if not tag_ids:
     return []
@@ -104,6 +116,7 @@ def check_tags_exist(username: str, tag_ids: list[str]) -> list[str]:
     return [row["tid"] for row in cur.fetchall()]
 
 
+@tracer.capture_method(capture_response=False)
 def delete_all_tags_for_user(username: str) -> None:
   conn = get_connection()
   with conn.cursor() as cur:

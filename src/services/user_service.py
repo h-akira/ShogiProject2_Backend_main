@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import boto3
+from aws_lambda_powertools import Tracer
+
+tracer = Tracer()
 from botocore.exceptions import ClientError
 
 from common.config import CLIENT_ID, USER_POOL_ID
@@ -9,6 +12,7 @@ from repositories import kifu_repository, tag_repository
 from repositories.db import get_connection
 
 
+@tracer.capture_method(capture_response=False)
 def get_me(claims: dict) -> dict:
   username = claims["cognito:username"]
   email = claims.get("email", "")
@@ -32,6 +36,7 @@ def get_me(claims: dict) -> dict:
   }
 
 
+@tracer.capture_method(capture_response=False)
 def delete_account(username: str, password: str) -> None:
   if not password:
     raise ValidationError("password is required")

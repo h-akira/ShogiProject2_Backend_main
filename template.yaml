@@ -57,10 +57,12 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "lambda-sgp-${Env}-backend-main"
+      Tracing: Active
       CodeUri: src/
       Handler: app.lambda_handler
       Environment:
         Variables:
+          POWERTOOLS_SERVICE_NAME: sgp-main
           DSQL_CLUSTER_ENDPOINT: !GetAtt DsqlCluster.Endpoint
           KIFU_MAX: !Ref KifuMax
           TAG_MAX: !Ref TagMax

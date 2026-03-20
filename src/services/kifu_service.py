@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import psycopg.errors
+from aws_lambda_powertools import Tracer
+
+tracer = Tracer()
 
 from common.config import KIFU_MAX
 from common.datetime_util import now_iso8601
@@ -80,6 +83,7 @@ def _build_kifu_summary(kifu: dict) -> dict:
   }
 
 
+@tracer.capture_method(capture_response=False)
 def create_kifu(username: str, body: dict) -> dict:
   _validate_kifu_input(body)
 
@@ -129,6 +133,7 @@ def create_kifu(username: str, body: dict) -> dict:
   return _build_kifu_detail(kifu, tags)
 
 
+@tracer.capture_method(capture_response=False)
 def get_kifu(username: str, kid: str) -> dict:
   kifu = kifu_repository.get_kifu_with_tags(username, kid)
   if not kifu:
@@ -136,6 +141,7 @@ def get_kifu(username: str, kid: str) -> dict:
   return _build_kifu_detail(kifu)
 
 
+@tracer.capture_method(capture_response=False)
 def get_recent_kifus(username: str) -> dict:
   rows = kifu_repository.list_recent_kifus(username)
   total_count = rows[0]["total_count"] if rows else 0
@@ -143,6 +149,7 @@ def get_recent_kifus(username: str) -> dict:
   return {"kifus": kifus, "total_count": total_count}
 
 
+@tracer.capture_method(capture_response=False)
 def get_explorer(username: str, path: str) -> dict:
   if path and not path.endswith("/"):
     path = path + "/"
@@ -171,6 +178,7 @@ def get_explorer(username: str, path: str) -> dict:
   }
 
 
+@tracer.capture_method(capture_response=False)
 def update_kifu(username: str, kid: str, body: dict) -> dict:
   existing = kifu_repository.get_kifu(username, kid)
   if not existing:
@@ -227,6 +235,7 @@ def update_kifu(username: str, kid: str, body: dict) -> dict:
   return get_kifu(username, kid)
 
 
+@tracer.capture_method(capture_response=False)
 def delete_kifu(username: str, kid: str) -> None:
   existing = kifu_repository.get_kifu(username, kid)
   if not existing:
@@ -234,6 +243,7 @@ def delete_kifu(username: str, kid: str) -> None:
   kifu_repository.delete_kifu(kid, username)
 
 
+@tracer.capture_method(capture_response=False)
 def get_shared_kifu(share_code: str) -> dict:
   kifu = kifu_repository.get_shared_kifu(share_code)
   if not kifu:
@@ -249,6 +259,7 @@ def get_shared_kifu(share_code: str) -> dict:
   }
 
 
+@tracer.capture_method(capture_response=False)
 def regenerate_share_code(username: str, kid: str) -> dict:
   existing = kifu_repository.get_kifu(username, kid)
   if not existing:

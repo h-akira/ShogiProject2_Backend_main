@@ -14,6 +14,7 @@
 ```
 Backend/main/
 ├── tests/
+│   ├── pytest.ini                    # pytest 設定
 │   ├── __init__.py
 │   ├── local/                        # ローカル実行可能（AWS 不要）
 │   │   ├── __init__.py
@@ -50,15 +51,15 @@ moto[cognitoidp]
 
 ## pytest 設定
 
-### `pytest.ini`
+### `tests/pytest.ini`
 
 ```ini
 [pytest]
-pythonpath = src
-testpaths = tests/local
+pythonpath = ../src
+testpaths = local
 ```
 
-> `testpaths` はローカルテストのみを指定。DSQL テストは明示的に `python -m pytest tests/dsql/ -v` で実行する。
+> `pytest.ini` は `tests/` ディレクトリに配置。`testpaths` はローカルテストのみを指定。DSQL テストは明示的に `python -m pytest dsql/ -v` で実行する。
 
 ---
 
@@ -147,14 +148,14 @@ test_<対象>_<シナリオ>
 ## テスト実行
 
 ```bash
-cd Backend/main
+cd Backend/main/tests
 
 # ローカルテスト（デフォルト）
-python -m pytest tests/local/ -v
+python -m pytest -v
 
 # DSQL テスト（AWS 認証が必要）
-AWS_PROFILE=shogi python -m pytest tests/dsql/ -v
+AWS_PROFILE=shogi python -m pytest dsql/ -v
 
 # 全テスト
-AWS_PROFILE=shogi python -m pytest tests/ -v
+AWS_PROFILE=shogi python -m pytest local/ dsql/ -v
 ```

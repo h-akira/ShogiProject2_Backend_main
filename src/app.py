@@ -1,6 +1,6 @@
 import json
 
-from aws_lambda_powertools import Logger
+from aws_lambda_powertools import Logger, Tracer
 from aws_lambda_powertools.event_handler import APIGatewayRestResolver, CORSConfig, Response
 
 from common.exceptions import AppError
@@ -10,6 +10,7 @@ from routes.shared import router as shared_router
 from routes.tags import router as tags_router
 
 logger = Logger()
+tracer = Tracer()
 
 app = APIGatewayRestResolver(
   strip_prefixes=["/api/v1/main"],
@@ -45,5 +46,6 @@ def handle_unexpected_error(ex: Exception):
   )
 
 
+@tracer.capture_lambda_handler
 def lambda_handler(event, context):
   return app.resolve(event, context)

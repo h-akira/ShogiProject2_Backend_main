@@ -15,7 +15,6 @@ Backend/main/
 ├── template.yaml            # SAM テンプレート
 ├── requirements.txt         # 本番依存パッケージ
 ├── requirements-dev.txt     # 開発用依存パッケージ
-├── pytest.ini               # pytest 設定
 ├── migrations/
 │   ├── migrate.py           # マイグレーション実行スクリプト
 │   ├── requirements.txt     # マイグレーション用依存パッケージ
@@ -48,11 +47,19 @@ Backend/main/
 │       ├── id_generator.py   # ランダム ID / share_code 生成
 │       └── datetime_util.py  # 日時ユーティリティ
 └── tests/
+    ├── pytest.ini            # pytest 設定
     ├── __init__.py
-    ├── conftest.py           # 共通フィクスチャ
-    ├── test_routes.py        # ルート層の統合テスト
-    ├── test_services.py      # サービス層の単体テスト
-    └── test_repositories.py  # リポジトリ層の単体テスト
+    ├── README.md             # テスト方針・実行方法
+    ├── local/                # ローカルテスト（AWS 不要）
+    │   ├── __init__.py
+    │   ├── conftest.py       # モック・ローカル PG フィクスチャ
+    │   ├── test_routes.py    # ルート層の統合テスト
+    │   ├── test_services.py  # サービス層の単体テスト
+    │   └── test_repositories.py  # リポジトリ層の単体テスト
+    └── dsql/                 # DSQL 結合テスト（AWS 認証必須）
+        ├── __init__.py
+        ├── conftest.py       # DSQL 接続フィクスチャ
+        └── ...
 ```
 
 ---

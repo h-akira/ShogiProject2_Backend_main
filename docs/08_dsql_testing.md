@@ -18,6 +18,7 @@
 ```
 Backend/main/
 └── tests/
+    ├── pytest.ini                    # pytest 設定
     ├── local/                        # ローカル実行可能（AWS 不要）
     │   ├── conftest.py
     │   ├── test_repositories.py
@@ -37,8 +38,8 @@ Backend/main/
 ### ローカルテストとの分離
 
 - `tests/dsql/` はローカルテスト（`tests/local/`）と同じ `tests/` 配下に配置するが、サブディレクトリで明確に分離する
-- `pytest.ini` の `testpaths` は `tests/local` のみを指定し、デフォルトでは DSQL テストは実行されない
-- DSQL テストは明示的に `python -m pytest tests/dsql/ -v` で実行する
+- `tests/pytest.ini` の `testpaths` は `local` のみを指定し、デフォルトでは DSQL テストは実行されない
+- DSQL テストは `tests/` ディレクトリから明示的に `python -m pytest dsql/ -v` で実行する
 - AWS 認証情報と DSQL エンドポイントが必要（CI/CD では実行しない想定）
 
 ---
@@ -71,17 +72,17 @@ Backend/main/
 ## 実行方法
 
 ```bash
-cd Backend/main
+cd Backend/main/tests
 
 # 依存パッケージのインストール
-pip install -r requirements.txt
+pip install -r ../requirements.txt
 pip install pytest
 
 # DSQL テストの実行
-python -m pytest tests/dsql/ -v
+python -m pytest dsql/ -v
 
 # 特定フェーズのみ実行
-python -m pytest tests/dsql/test_00_connectivity.py -v
+python -m pytest dsql/test_00_connectivity.py -v
 ```
 
 ---

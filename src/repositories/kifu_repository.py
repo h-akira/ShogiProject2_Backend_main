@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+from aws_lambda_powertools import Tracer
+
 from repositories.db import get_connection
 
+tracer = Tracer()
 
+
+@tracer.capture_method(capture_response=False)
 def get_kifu(username: str, kid: str) -> dict | None:
   conn = get_connection()
   with conn.cursor() as cur:
@@ -13,6 +18,7 @@ def get_kifu(username: str, kid: str) -> dict | None:
     return cur.fetchone()
 
 
+@tracer.capture_method(capture_response=False)
 def get_kifu_with_tags(username: str, kid: str) -> dict | None:
   conn = get_connection()
   with conn.cursor() as cur:
@@ -35,6 +41,7 @@ def get_kifu_with_tags(username: str, kid: str) -> dict | None:
     return cur.fetchone()
 
 
+@tracer.capture_method(capture_response=False)
 def list_recent_kifus(username: str, limit: int = 10) -> list[dict]:
   conn = get_connection()
   with conn.cursor() as cur:
@@ -60,6 +67,7 @@ def list_recent_kifus(username: str, limit: int = 10) -> list[dict]:
     return cur.fetchall()
 
 
+@tracer.capture_method(capture_response=False)
 def count_kifus(username: str) -> int:
   conn = get_connection()
   with conn.cursor() as cur:
@@ -71,6 +79,7 @@ def count_kifus(username: str) -> int:
     return row["cnt"] if row else 0
 
 
+@tracer.capture_method(capture_response=False)
 def insert_kifu(kifu: dict) -> dict:
   conn = get_connection()
   columns = list(kifu.keys())
@@ -87,6 +96,7 @@ def insert_kifu(kifu: dict) -> dict:
   return row
 
 
+@tracer.capture_method(capture_response=False)
 def update_kifu(kid: str, username: str, updates: dict) -> dict:
   conn = get_connection()
   set_clauses = ", ".join([f"{k} = %s" for k in updates.keys()])
@@ -101,6 +111,7 @@ def update_kifu(kid: str, username: str, updates: dict) -> dict:
   return row
 
 
+@tracer.capture_method(capture_response=False)
 def delete_kifu(kid: str, username: str) -> None:
   conn = get_connection()
   with conn.transaction():
@@ -112,6 +123,7 @@ def delete_kifu(kid: str, username: str) -> None:
       )
 
 
+@tracer.capture_method(capture_response=False)
 def query_by_slug_prefix(username: str, prefix: str) -> list[dict]:
   conn = get_connection()
   like_pattern = prefix + "%"
@@ -123,6 +135,7 @@ def query_by_slug_prefix(username: str, prefix: str) -> list[dict]:
     return cur.fetchall()
 
 
+@tracer.capture_method(capture_response=False)
 def get_shared_kifu(share_code: str) -> dict | None:
   conn = get_connection()
   with conn.cursor() as cur:
@@ -133,6 +146,7 @@ def get_shared_kifu(share_code: str) -> dict | None:
     return cur.fetchone()
 
 
+@tracer.capture_method(capture_response=False)
 def get_tag_ids_for_kifu(kid: str) -> list[str]:
   conn = get_connection()
   with conn.cursor() as cur:
@@ -140,6 +154,7 @@ def get_tag_ids_for_kifu(kid: str) -> list[str]:
     return [row["tid"] for row in cur.fetchall()]
 
 
+@tracer.capture_method(capture_response=False)
 def insert_kifu_tags(kid: str, tag_ids: list[str]) -> None:
   if not tag_ids:
     return
@@ -153,6 +168,7 @@ def insert_kifu_tags(kid: str, tag_ids: list[str]) -> None:
         )
 
 
+@tracer.capture_method(capture_response=False)
 def delete_kifu_tags(kid: str, tag_ids: list[str]) -> None:
   if not tag_ids:
     return
@@ -166,6 +182,7 @@ def delete_kifu_tags(kid: str, tag_ids: list[str]) -> None:
         )
 
 
+@tracer.capture_method(capture_response=False)
 def delete_all_kifu_tags_for_user(username: str) -> None:
   conn = get_connection()
   with conn.cursor() as cur:
@@ -175,6 +192,7 @@ def delete_all_kifu_tags_for_user(username: str) -> None:
     )
 
 
+@tracer.capture_method(capture_response=False)
 def delete_all_kifus_for_user(username: str) -> None:
   conn = get_connection()
   with conn.cursor() as cur:

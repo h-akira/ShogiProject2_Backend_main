@@ -20,7 +20,6 @@ Backend/main/
 ├── template.yaml              # SAM テンプレート
 ├── requirements.txt           # 本番依存パッケージ
 ├── requirements-dev.txt       # 開発用依存パッケージ
-├── pytest.ini                 # pytest 設定
 ├── migrations/
 │   ├── migrate.py             # マイグレーション実行スクリプト
 │   ├── requirements.txt       # マイグレーション用依存パッケージ
@@ -34,10 +33,9 @@ Backend/main/
 │   ├── repositories/          # DB アクセス（Aurora DSQL）
 │   └── common/                # 認証・設定・例外・ユーティリティ
 ├── tests/
-│   ├── conftest.py            # 共通フィクスチャ
-│   ├── test_routes.py         # ルート層統合テスト
-│   ├── test_services.py       # サービス層単体テスト
-│   └── test_repositories.py   # リポジトリ層単体テスト（要 PostgreSQL）
+│   ├── pytest.ini             # pytest 設定
+│   ├── local/                 # ローカルテスト（AWS 不要）
+│   └── dsql/                  # DSQL 結合テスト（AWS 認証必須）
 └── docs/                      # 詳細設計ドキュメント
 ```
 
@@ -157,36 +155,7 @@ CodeBuild の `post_build` フェーズで `sam deploy` 後に自動実行され
 
 ## テスト
 
-### 前提条件（PostgreSQL）
-
-リポジトリ層テスト (`test_repositories.py`) はローカル PostgreSQL が必要。未インストールの場合は自動スキップされるが、全テストを実行するには以下でインストールする。
-
-```bash
-# macOS (Homebrew)
-brew install postgresql@16
-```
-
-> **Note:** Aurora DSQL は PostgreSQL 16 互換のため `postgresql@16` を推奨。常駐サービスの起動（`brew services start`）は不要 — `pytest-postgresql` がテスト実行時に一時インスタンスを自動で起動・終了する。
-
-### 実行方法
-
-```bash
-cd Backend/main
-pip install -r requirements-dev.txt
-python -m pytest tests/ -v
-```
-
-### テスト構成
-
-| ファイル | 対象 | PostgreSQL |
-|---------|------|-----------|
-| `test_services.py` | サービス層（バリデーション、ビジネスロジック） | 不要（mock） |
-| `test_routes.py` | ルート層（HTTP ステータス、レスポンス形式） | 不要（mock） |
-| `test_repositories.py` | リポジトリ層（SQL クエリ） | **必要**（pytest-postgresql） |
-
-リポジトリ層テストはローカルに PostgreSQL がインストールされていない場合は自動でスキップされる。
-
-> **Aurora DSQL との差異:** OCC（楽観的同時実行制御）や `CREATE INDEX ASYNC` 等の DSQL 固有動作はローカル PostgreSQL では検証できない。通常の SQL（INSERT/SELECT/UPDATE/DELETE/JOIN）の正当性検証が目的。
+テスト方針・実行方法・テスト構成の詳細は [tests/README.md](tests/README.md) を参照。
 
 ## 設計ドキュメント
 
