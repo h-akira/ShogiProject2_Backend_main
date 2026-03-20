@@ -71,6 +71,7 @@ Resources:
           CLIENT_ID: !ImportValue
             Fn::Sub: "sgp-${Env}-infra-CognitoClientId"
       Policies:
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
         - Version: "2012-10-17"
           Statement:
             - Effect: Allow
