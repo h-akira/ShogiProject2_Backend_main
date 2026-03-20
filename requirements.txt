@@ -1,4 +1,0 @@
-aws-lambda-powertools[tracer]
-boto3
-aurora-dsql-python-connector
-psycopg[binary,pool]
