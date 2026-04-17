@@ -1,6 +1,6 @@
 # DSQL 結合テスト
 
-Aurora DSQL クラスタに対する結合テスト。テスト方針は [docs/08_dsql_testing.md](../../docs/08_dsql_testing.md) を参照。
+Aurora DSQL クラスタに対する結合テスト。全体のテスト方針は [tests/README.md](../README.md) を参照。
 
 ---
 

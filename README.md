@@ -28,15 +28,17 @@ Backend/main/
 │       └── 002_create_indexes.sql
 ├── src/                       # Lambda デプロイ対象（CodeUri）
 │   ├── app.py                 # エントリポイント (lambda_handler)
-│   ├── routes/                # HTTP ルーティング
-│   ├── services/              # ビジネスロジック
-│   ├── repositories/          # DB アクセス（Aurora DSQL）
-│   └── common/                # 認証・設定・例外・ユーティリティ
+│   ├── domain/                # ドメイン層（VO・エンティティ・Repository ABC・例外）
+│   ├── application/           # アプリケーション層（ユースケース・DTO）
+│   ├── infrastructure/        # インフラ層（DB 実装・Cognito クライアント）
+│   ├── presentation/          # プレゼンテーション層（ルーティング・DI・例外マッピング）
+│   └── common/                # 認証・設定・ユーティリティ
 ├── tests/
 │   ├── pytest.ini             # pytest 設定
-│   ├── local/                 # ローカルテスト（AWS 不要）
+│   ├── domain/                # ドメイン層テスト（純粋 Python、IO なし）
+│   ├── application/           # アプリケーション層テスト（InMemoryRepository 使用）
 │   └── dsql/                  # DSQL 結合テスト（AWS 認証必須）
-└── docs/                      # 詳細設計ドキュメント
+└── docs/                      # DDD 設計ドキュメント
 ```
 
 ## API エンドポイント
@@ -145,7 +147,7 @@ python migrate.py --endpoint <DSQL_CLUSTER_ENDPOINT>
 
 ### CI/CD 統合
 
-CodeBuild の `post_build` フェーズで `sam deploy` 後に自動実行される。詳細は [docs/07_migration_strategy.md](docs/07_migration_strategy.md) を参照。
+CodeBuild の `post_build` フェーズで `sam deploy` 後に自動実行される。
 
 ### DDL の管理ルール
 
@@ -159,14 +161,12 @@ CodeBuild の `post_build` フェーズで `sam deploy` 後に自動実行され
 
 ## 設計ドキュメント
 
-詳細設計は `docs/` 配下を参照。
+DDD（ドメイン駆動設計）に基づく設計書は `docs/` 配下を参照。
 
 | ファイル | 内容 |
 |---------|------|
-| [01_database_design.md](docs/01_database_design.md) | テーブル・インデックス・アクセスパターン |
-| [02_directory_structure.md](docs/02_directory_structure.md) | ディレクトリ構成・レイヤー責務 |
-| [03_routing_design.md](docs/03_routing_design.md) | ルーティング・各ハンドラの処理フロー |
-| [04_common_modules.md](docs/04_common_modules.md) | 共通処理・バリデーション・例外体系 |
-| [05_sam_template.md](docs/05_sam_template.md) | SAM テンプレートの設計詳細 |
-| [06_testing_strategy.md](docs/06_testing_strategy.md) | テスト方針・テストケース一覧 |
-| [07_migration_strategy.md](docs/07_migration_strategy.md) | マイグレーション方針・CI/CD 統合 |
+| [01_domain_model.md](docs/01_domain_model.md) | ドメインモデル概要・境界づけられたコンテキスト・ユビキタス言語 |
+| [02_aggregates.md](docs/02_aggregates.md) | 集約定義・Value Object・不変条件 |
+| [03_use_cases.md](docs/03_use_cases.md) | ユースケース一覧・Command/Response DTO |
+| [04_architecture.md](docs/04_architecture.md) | 4 層アーキテクチャ・依存ルール・DI 設計 |
+| [05_testing_strategy.md](docs/05_testing_strategy.md) | DDD テストピラミッド・テスト構成 |

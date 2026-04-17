@@ -3,11 +3,12 @@ import json
 from aws_lambda_powertools import Logger, Tracer
 from aws_lambda_powertools.event_handler import APIGatewayRestResolver, CORSConfig, Response
 
-from common.exceptions import AppError
-from routes.users import router as users_router
-from routes.kifus import router as kifus_router
-from routes.shared import router as shared_router
-from routes.tags import router as tags_router
+from domain.exceptions import DomainError
+from presentation.exception_handlers import handle_domain_error
+from presentation.routes.users import router as users_router
+from presentation.routes.kifus import router as kifus_router
+from presentation.routes.shared import router as shared_router
+from presentation.routes.tags import router as tags_router
 
 logger = Logger()
 tracer = Tracer()
@@ -27,12 +28,17 @@ app.include_router(shared_router, prefix="/shared")
 app.include_router(tags_router, prefix="/tags")
 
 
-@app.exception_handler(AppError)
-def handle_app_error(ex: AppError):
+@app.exception_handler(DomainError)
+def handle_domain_exception(ex: DomainError):
+  return handle_domain_error(ex)
+
+
+@app.exception_handler(ValueError)
+def handle_value_error(ex: ValueError):
   return Response(
-    status_code=ex.status_code,
+    status_code=400,
     content_type="application/json",
-    body=json.dumps({"message": ex.message}),
+    body=json.dumps({"message": str(ex)}),
   )
 
 

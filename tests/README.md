@@ -2,12 +2,14 @@
 
 ## 概要
 
-テストは実行環境に応じて 2 つのカテゴリに分離する。
+テストは DDD のレイヤー構造に沿って分類される。
+内側の層ほどテストが厚く・高速になるように設計する（テストピラミッド）。
 
-| カテゴリ | ディレクトリ | 実行環境 | 依存 |
-|---------|------------|---------|------|
-| ローカルテスト | `local/` | ローカル（AWS 不要） | モック / ローカル PostgreSQL |
-| DSQL テスト | `dsql/` | AWS 認証必須 | デプロイ済み Aurora DSQL |
+| カテゴリ | ディレクトリ | 実行環境 | 依存 | 目的 |
+|---------|------------|---------|------|------|
+| ドメインテスト | `domain/` | ローカル（AWS 不要） | なし（純粋 Python） | VO・エンティティ・ドメインサービスの検証 |
+| アプリケーションテスト | `application/` | ローカル（AWS 不要） | InMemoryRepository | ユースケースフローの検証 |
+| DSQL テスト | `dsql/` | AWS 認証必須 | デプロイ済み Aurora DSQL | DB レベルの SQL 動作・DSQL 固有挙動の検証 |
 
 ### ディレクトリ構成
 
@@ -15,36 +17,49 @@
 tests/
 ├── pytest.ini                       # pytest 設定
 ├── __init__.py
-├── local/                           # ローカル実行可能（AWS 不要）
+├── domain/                          # ドメイン層テスト（純粋 Python、IO なし）
 │   ├── __init__.py
-│   ├── conftest.py                  # モック・ローカル PG フィクスチャ
-│   ├── test_repositories.py         # リポジトリ層（ローカル PG）
-│   ├── test_services.py             # サービス層（モック）
-│   └── test_routes.py               # ルート層（モック）
-└── dsql/                            # 実 DSQL 接続が必要
+│   ├── test_value_objects.py        # Value Object の生成・検証・等価性
+│   ├── test_kifu.py                 # Kifu エンティティの振る舞い
+│   ├── test_tag.py                  # Tag エンティティの振る舞い
+│   └── test_services.py             # KifuExplorerService のロジック
+├── application/                     # アプリケーション層テスト（InMemoryRepo 使用）
+│   ├── __init__.py
+│   ├── helpers/
+│   │   ├── __init__.py
+│   │   └── in_memory_repositories.py  # Repository ABC の dict 実装
+│   ├── test_kifu_use_cases.py       # 棋譜関連 8 ユースケース
+│   ├── test_tag_use_cases.py        # タグ関連 5 ユースケース
+│   └── test_user_use_cases.py       # ユーザー関連 2 ユースケース
+└── dsql/                            # 実 DSQL 接続が必要（生 SQL テスト）
     ├── __init__.py
     ├── conftest.py                  # DSQL 接続フィクスチャ
     ├── test_00_connectivity.py      # 疎通テスト
     ├── test_01_schema.py            # スキーマ検証
-    ├── test_02_kifu_crud.py         # 棋譜 CRUD
-    ├── test_03_tag_crud.py          # タグ CRUD
-    ├── test_04_dsql_specific.py     # DSQL 固有動作
+    ├── test_02_kifu_crud.py         # 棋譜 CRUD（生 SQL）
+    ├── test_03_tag_crud.py          # タグ CRUD（生 SQL）
+    ├── test_04_dsql_specific.py     # DSQL 固有動作（OCC, collation 等）
     ├── README.md                    # テスト項目の詳細
     └── RESULTS.md                   # テスト実行結果
 ```
 
 ---
 
-## 前提条件（PostgreSQL）
+## テストピラミッド
 
-リポジトリ層テスト (`test_repositories.py`) はローカル PostgreSQL が必要。未インストールの場合は自動スキップされる。
-
-```bash
-# macOS (Homebrew)
-brew install postgresql@16
+```
+         /‾‾‾‾‾‾‾\
+        / DSQL 統合 \         — 実 AWS 環境（Aurora DSQL）
+       /‾‾‾‾‾‾‾‾‾‾‾‾‾\
+      /   Application    \    — InMemoryRepository（IO なし）
+     /‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\
+    /        Domain          \  — 純粋 Python（モック不要）
+   ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 ```
 
-> **Note:** Aurora DSQL は PostgreSQL 16 互換のため `postgresql@16` を推奨。常駐サービスの起動（`brew services start`）は不要 — `pytest-postgresql` がテスト実行時に一時インスタンスを自動で起動・終了する。
+- **Domain**: Value Object の検証ルール、エンティティの振る舞い（create, update, tag sync 等）、ドメインサービスのロジック。外部依存ゼロ、ミリ秒で完了。
+- **Application**: ユースケースのフロー（上限チェック → 検証 → 永続化 → レスポンス変換）。`InMemoryRepository` を使い DB なしで高速に実行。
+- **DSQL**: デプロイ済みクラスタへの生 SQL テスト。アプリケーションコードは import せず、SQL レベルでの動作保証と DSQL 固有挙動（OCC、Cコレーション等）の検証が目的。
 
 ---
 
@@ -55,10 +70,11 @@ brew install postgresql@16
 ```ini
 [pytest]
 pythonpath = ../src
-testpaths = local
+testpaths = domain application
 ```
 
-> `testpaths` はローカルテストのみを指定。DSQL テストは明示的に `python -m pytest dsql/ -v` で実行する。
+> `testpaths` はローカルで常に実行するテスト（domain, application）のみを指定。
+> DSQL テストは明示的に `python -m pytest dsql/ -v` で実行する。
 
 ---
 
@@ -80,46 +96,33 @@ moto[cognitoidp]
 ```bash
 cd Backend/main/tests
 
-# ローカルテスト（デフォルト）
+# ローカルテスト（domain + application、デフォルト）
 python -m pytest -v
+
+# ドメインテストのみ（最速）
+python -m pytest domain/ -v
+
+# アプリケーションテストのみ
+python -m pytest application/ -v
 
 # DSQL テスト（AWS 認証が必要）
 AWS_PROFILE=shogi python -m pytest dsql/ -v
 
 # 全テスト
-AWS_PROFILE=shogi python -m pytest local/ dsql/ -v
+AWS_PROFILE=shogi python -m pytest domain/ application/ dsql/ -v
 ```
-
----
-
-## テスト構成
-
-### ローカルテスト (`local/`)
-
-| ファイル | 対象 | PostgreSQL |
-|---------|------|-----------|
-| `test_services.py` | サービス層（バリデーション、ビジネスロジック） | 不要（mock） |
-| `test_routes.py` | ルート層（HTTP ステータス、レスポンス形式） | 不要（mock） |
-| `test_repositories.py` | リポジトリ層（SQL クエリ） | **必要**（pytest-postgresql） |
-
-リポジトリ層テストはローカルに PostgreSQL がインストールされていない場合は自動でスキップされる。
-
-> **Aurora DSQL との差異:** OCC（楽観的同時実行制御）や `CREATE INDEX ASYNC` 等の DSQL 固有動作はローカル PostgreSQL では検証できない。通常の SQL（INSERT/SELECT/UPDATE/DELETE/JOIN）の正当性検証が目的。
-
-### DSQL テスト (`dsql/`)
-
-デプロイ済み Aurora DSQL クラスタに対する結合テスト。詳細は [dsql/README.md](dsql/README.md) を参照。
 
 ---
 
 ## テスト命名規約
 
 ```
-test_<対象>_<シナリオ>
+test_<操作>_<シナリオ>[_<期待結果>]
 ```
 
 例:
 - `test_create_kifu_success`
-- `test_create_kifu_slug_conflict`
-- `test_delete_me_wrong_password`
-- `test_get_shared_kifu_not_found`
+- `test_create_kifu_limit_exceeded`
+- `test_slug_auto_appends_kif`
+- `test_compute_tag_changes`
+- `test_delete_account_wrong_password`
