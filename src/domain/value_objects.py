@@ -43,12 +43,15 @@ class KifuId:
 
 @dataclass(frozen=True)
 class TagId:
-  """Unique identifier for a Tag entity (12-char alphanumeric)."""
+  """Unique identifier for a Tag entity (8-12 char alphanumeric).
+
+  Legacy tags use 8-char IDs; new tags use 12-char IDs.
+  """
   value: str
 
   def __post_init__(self) -> None:
-    if not self.value or len(self.value) != 12:
-      raise DomainValidationError("TagId must be exactly 12 characters")
+    if not self.value or not (8 <= len(self.value) <= 12):
+      raise DomainValidationError("TagId must be 8-12 characters")
     if not self.value.isalnum():
       raise DomainValidationError("TagId must be alphanumeric")
 

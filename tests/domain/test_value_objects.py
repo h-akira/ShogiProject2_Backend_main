@@ -49,17 +49,26 @@ class TestKifuId:
 
 
 class TestTagId:
-  def test_valid_creation(self):
+  def test_valid_creation_12_chars(self):
     tid = TagId("abcdef123456")
     assert tid.value == "abcdef123456"
+
+  def test_valid_creation_8_chars(self):
+    """Legacy tags use 8-char IDs."""
+    tid = TagId("uPPh3pHj")
+    assert tid.value == "uPPh3pHj"
 
   def test_empty_raises_error(self):
     with pytest.raises(DomainValidationError):
       TagId("")
 
-  def test_wrong_length_raises_error(self):
+  def test_too_short_raises_error(self):
     with pytest.raises(DomainValidationError):
       TagId("abc")
+
+  def test_too_long_raises_error(self):
+    with pytest.raises(DomainValidationError):
+      TagId("a" * 13)
 
 
 class TestSlug:

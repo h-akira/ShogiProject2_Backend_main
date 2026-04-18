@@ -24,8 +24,8 @@ Python では `@dataclass(frozen=True)` で実装する。
 | 項目 | 内容 |
 |---|---|
 | 型 | `str` のラッパー |
-| 制約 | 12文字の英数字（a-z, A-Z, 0-9） |
-| 生成 | `common.id_generator.generate_id()` で生成 |
+| 制約 | 8-12文字の英数字（a-z, A-Z, 0-9）。レガシーデータは8文字、新規は12文字 |
+| 生成 | `common.id_generator.generate_id()` で生成（12文字） |
 | 用途 | Tag エンティティの一意識別子 |
 
 ### Slug
