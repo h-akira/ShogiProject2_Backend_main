@@ -3,7 +3,7 @@
 import pytest
 
 from domain.exceptions import DomainValidationError
-from domain.kifu import Kifu
+from domain.kifu import Kifu, MAX_KIF_LENGTH, MAX_MEMO_LENGTH
 from domain.value_objects import (
   GameResult,
   KifuId,
@@ -79,6 +79,22 @@ class TestKifuCreate:
   def test_shared_without_share_code_raises_error(self):
     with pytest.raises(DomainValidationError, match="share_code is required"):
       _make_kifu(shared=True, share_code=None)
+
+  def test_kif_at_max_length_succeeds(self):
+    kifu = _make_kifu(kif="A" * MAX_KIF_LENGTH)
+    assert len(kifu.kif) == MAX_KIF_LENGTH
+
+  def test_kif_over_max_length_raises_error(self):
+    with pytest.raises(DomainValidationError, match="kif must not exceed"):
+      _make_kifu(kif="A" * (MAX_KIF_LENGTH + 1))
+
+  def test_memo_at_max_length_succeeds(self):
+    kifu = _make_kifu(memo="A" * MAX_MEMO_LENGTH)
+    assert len(kifu.memo) == MAX_MEMO_LENGTH
+
+  def test_memo_over_max_length_raises_error(self):
+    with pytest.raises(DomainValidationError, match="memo must not exceed"):
+      _make_kifu(memo="A" * (MAX_MEMO_LENGTH + 1))
 
   def test_not_shared_clears_share_code(self):
     kifu = _make_kifu(shared=False, share_code=_make_share_code())
@@ -165,6 +181,34 @@ class TestKifuUpdate:
         result=kifu.result,
         memo=kifu.memo,
         kif="",
+        shared=False,
+        share_code=None,
+        now="2024-06-01T00:00:00Z",
+      )
+
+  def test_update_kif_over_max_length_raises_error(self):
+    kifu = _make_kifu()
+    with pytest.raises(DomainValidationError, match="kif must not exceed"):
+      kifu.update(
+        slug=kifu.slug,
+        side=kifu.side,
+        result=kifu.result,
+        memo=kifu.memo,
+        kif="A" * (MAX_KIF_LENGTH + 1),
+        shared=False,
+        share_code=None,
+        now="2024-06-01T00:00:00Z",
+      )
+
+  def test_update_memo_over_max_length_raises_error(self):
+    kifu = _make_kifu()
+    with pytest.raises(DomainValidationError, match="memo must not exceed"):
+      kifu.update(
+        slug=kifu.slug,
+        side=kifu.side,
+        result=kifu.result,
+        memo="A" * (MAX_MEMO_LENGTH + 1),
+        kif=kifu.kif,
         shared=False,
         share_code=None,
         now="2024-06-01T00:00:00Z",

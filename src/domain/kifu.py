@@ -19,6 +19,27 @@ from domain.value_objects import (
   Username,
 )
 
+# Upper bounds (in characters) to prevent storage/cost abuse.
+# Typical kifu are a few KB even with comments; memo is short free text.
+MAX_KIF_LENGTH = 100_000
+MAX_MEMO_LENGTH = 10_000
+
+
+def _validate_kif(kif: str) -> None:
+  if not kif:
+    raise DomainValidationError("kif is required")
+  if len(kif) > MAX_KIF_LENGTH:
+    raise DomainValidationError(
+      f"kif must not exceed {MAX_KIF_LENGTH} characters"
+    )
+
+
+def _validate_memo(memo: str) -> None:
+  if len(memo) > MAX_MEMO_LENGTH:
+    raise DomainValidationError(
+      f"memo must not exceed {MAX_MEMO_LENGTH} characters"
+    )
+
 
 @dataclass
 class Kifu:
@@ -109,8 +130,8 @@ class Kifu:
     now: str,
   ) -> Kifu:
     """Create a new Kifu entity with full validation."""
-    if not kif:
-      raise DomainValidationError("kif is required")
+    _validate_kif(kif)
+    _validate_memo(memo)
 
     # Enforce share_code invariant
     if shared and share_code is None:
@@ -179,8 +200,8 @@ class Kifu:
     now: str,
   ) -> None:
     """Update kifu metadata."""
-    if not kif:
-      raise DomainValidationError("kif is required")
+    _validate_kif(kif)
+    _validate_memo(memo)
 
     if shared and share_code is None:
       raise DomainValidationError("share_code is required when shared is true")
