@@ -1,2 +1,3 @@
-aurora-dsql-python-connector
-psycopg[binary]
+aurora-dsql-python-connector==0.2.7
+psycopg[binary]==3.3.4
+psycopg-pool==3.3.1
